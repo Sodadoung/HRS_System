@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+    <style>
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="contain mx-auto p-4">
+        <div class="flex justify-between items-center mb-4">
+            <button class="bg-blue-500 text-white px-4 py-2 rounded" onclick="openAddModal()">
+                <i class="fas fa-plus"></i> Add Employee
+            </button>
+        </div>
+        <div class="mb-4">
+            <input type="text" id="searchInput" placeholder="Search for employees..." class="p-2 border rounded w-full" oninput="searchEmployees()">
+        </div>
+        <div class="grid grid-cols-6 gap-4" id="employeeGrid">
+            <!-- Employee cards will populate here -->
+        </div>
+        <div class="fixed bottom-4 right-4 space-y-2">
+            <button class="bg-green-500 text-white p-4 rounded-full shadow" onclick="openImportModal()">
+                <i class="fas fa-file-import"></i> Import Data
+            </button>
+            <button class="bg-gray-200 text-gray-700 p-4 rounded-full shadow" onclick="exportToExcel()">
+                <i class="fas fa-folder"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- View Employee Modal -->
+    <div id="employeeModal" class="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center hidden">
+        <div class="bg-white p-6 rounded-lg shadow-lg w-1/2 max-h-[80vh] overflow-y-auto">
+            <h2 class="text-2xl font-bold mb-4">Employee Information</h2>
+            <form>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-gray-700">Last Name</label>
+                        <input type="text" id="lastName" class="w-full p-2 border rounded" readonly>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700">First Name</label>
+                        <input type="text" id="firstName" class="w-full p-2 border rounded" readonly>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700">Birthdate</label>
+                        <input type="date" id="birthdate" class="w-full p-2 border rounded" readonly>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700">Gender</label>
+                        <input type="text" id="gender" class="w-full p-2 border rounded" readonly>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700">Hire Date</label>
+                        <input type="date" id="hireDate" class="w-full p-2 border rounded" readonly>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700">Religion</label>
+                        <input type="text" id="religion" class="w-full p-2 border rounded" readonly>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700">Marital Status</label>
+                        <input type="text" id="maritalStatus" class="w-full p-2 border rounded" readonly>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700">Email</label>
+                        <input type="email" id="email" class="w-full p-2 border rounded" readonly>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700">Phone</label>
+                        <input type="text" id="phone" class="w-full p-2 border rounded" readonly>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700">Role</label>
+                        <input type="text" id="role" class="w-full p-2 border rounded" readonly>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700">Position</label>
+                        <input type="text" id="position" class="w-full p-2 border rounded" readonly>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700">Dependents</label>
+                        <input type="text" id="dependents" class="w-full p-2 border rounded" readonly>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700">Birth Place</label>
+                        <input type="text" id="birthPlace" class="w-full p-2 border rounded" readonly>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700">First Language</label>
+                        <input type="text" id="firstLanguage" class="w-full p-2 border rounded" readonly>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700">Second Language</label>
+                        <input type="text" id="secondLanguage" class="w-full p-2 border rounded" readonly>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700">Degree</label>
+                        <input type="text" id="degree" class="w-full p-2 border rounded" readonly>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700">Profile Image</label>
+                        <img id="profileImage" class="w-full h-auto border rounded hidden" alt="Profile Image Preview">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700">ID Card Image</label>
+                        <img id="idCardImage" class="w-full h-auto border rounded hidden" alt="ID Card Image Preview">
+                    </div>
+                </div>
+                <div class="mt-4 flex justify-end">
+                    <button type="button" class="bg-blue-500 text-white px-4 py-2 rounded" id="editButton" onclick="enableEdit()">Edit</button>
+                    <button type="button" class="bg-red-500 text-white px-4 py-2 rounded ml-2" onclick="closeModal()">Close</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Employee Modal -->
+    <div id="addEmployeeModal" class="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center hidden">
+        <!-- <div class="bg-white p-6 rounded-lg shadow-lg w-1/2 "> -->
+        <div class="bg-white p-6 rounded-lg shadow-lg w-1/2 max-h-[80vh] overflow-y-auto">
+            <h2 class="text-2xl font-bold mb-4">Add Employee</h2>
+            <form id="addEmployeeForm">
+                <div class="grid grid-cols-3 gap-2">
+                    <div>
+                        <label class="block text-gray-700">Last Name</label>
+                        <input type="text" id="addLastName" class="w-full p-2 border rounded">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700">First Name</label>
+                        <input type="text" id="addFirstName" class="w-full p-2 border rounded">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700">Birthdate</label>
+                        <input type="date" id="addBirthdate" class="w-full p-2 border rounded">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700">Gender</label>
+                        <input type="text" id="addGender" class="w-full p-2 border rounded">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700">Hire Date</label>
+                        <input type="date" id="addHireDate" class="w-full p-2 border rounded">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700">Religion</label>
+                        <input type="text" id="addReligion" class="w-full p-2 border rounded">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700">Marital Status</label>
+                        <input type="text" id="addMaritalStatus" class="w-full p-2 border rounded">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700">Email</label>
+                        <input type="email" id="addEmail" class="w-full p-2 border rounded">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700">Phone</label>
+                        <input type="text" id="addPhone" class="w-full p-2 border rounded">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700">Role</label>
+                        <input type="text" id="addRole" class="w-full p-2 border rounded">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700">Position</label>
+                        <input type="text" id="addPosition" class="w-full p-2 border rounded">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700">Dependents</label>
+                        <input type="text" id="addDependents" class="w-full p-2 border rounded">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700">Birth Place</label>
+                        <input type="text" id="addBirthPlace" class="w-full p-2 border rounded">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700">First Language</label>
+                        <input type="text" id="addFirstLanguage" class="w-full p-2 border rounded">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700">Second Language</label>
+                        <input type="text" id="addSecondLanguage" class="w-full p-2 border rounded">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700">Degree</label>
+                        <input type="text" id="addDegree" class="w-full p-2 border rounded">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700">Upload Image</label>
+                        <input type="file" id="addImage" class="w-full p-2 border rounded">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700">Upload ID Card</label>
+                        <input type="file" id="addIDCard" class="w-full p-2 border rounded">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700">Passport Number</label>
+                        <input type="text" id="addPassportNumber" class="w-full p-2 border rounded">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700">ID Number</label>
+                        <input type="text" id="addIDNumber" class="w-full p-2 border rounded">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700">Passport Expiry Date</label>
+                        <input type="date" id="addPassportExpiryDate" class="w-full p-2 border rounded">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700">Work Permit Number</label>
+                        <input type="text" id="addWorkPermitNumber" class="w-full p-2 border rounded">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700">Work Permit Expiry Date</label>
+                        <input type="date" id="addWorkPermitExpiryDate" class="w-full p-2 border rounded">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700">Medical Insurance Number</label>
+                        <input type="text" id="addMedicalInsuranceNumber" class="w-full p-2 border rounded">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700">Reference Number</label>
+                        <input type="text" id="addReferenceNumber" class="w-full p-2 border rounded">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700">Foreigner</label>
+                        <select class="w-full p-2 border rounded" id="addForeigner">
+                            <option value="">Select Yes/No</option>
+                            <option value="Yes">Yes</option>
+                            <option value="No">No</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700">Smoker</label>
+                        <select class=" w-full p-2 border rounded" >
+                            <option value="">Select Yes/No</option>
+                            <option value="Yes">Yes</option>
+                            <option value="No">No</option>
+                        </select>
+                    </div>
+                    <div>
+
+                    </div>
+                </div>
+                <div class="mt-4 flex justify-end">
+                    <button type="button" class="bg-blue-500 text-white px-4 py-2 rounded" onclick="confirmAddEmployee()">Add</button>
+                    <button type="button" class="bg-red-500 text-white px-4 py-2 rounded ml-2" onclick="closeAddModal()">Close</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- Import Employee Modal -->
+    <div id="importEmployeeModal" class="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center hidden">
+        <div class="bg-white p-6 rounded-lg shadow-lg w-1/3">
+            <h2 class="text-2xl font-bold mb-4">Import Employee Data</h2>
+            <input type="file" id="importFile" class="w-full p-2 border rounded" accept=".xlsx, .xls">
+            <div class="mt-4 flex justify-end">
+                <button type="button" class="bg-blue-500 text-white px-4 py-2 rounded" onclick="importEmployees()">Import</button>
+                <button type="button" class="bg-red-500 text-white px-4 py-2 rounded ml-2" onclick="closeImportModal()">Close</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        let currentEmployeeName = '';
+        let isEditing = false; // Track if in editing mode
+
+        // Load employees from local storage on page load
+        document.addEventListener('DOMContentLoaded', loadEmployees);
+
+        function loadEmployees() {
+            const employees = JSON.parse(localStorage.getItem('employees')) || [];
+            employees.forEach(employee => {
+                addEmployeeCard(employee);
+            });
+        }
+        
+        function addEmployeeCard(employee) {
+            const newEmployeeCard = `
+                <div class="bg-white p-4 rounded shadow relative">
+                        <h2 class="text-xl font-bold">${employee.firstName} ${employee.lastName}</h2>
+                        <p>${employee.position}</p>
+                        <p class="font-bold">${employee.role}</p>
+                        <p>Date hired</p>
+                        <p class="font-bold">${employee.hireDate}</p>
+                        <p>${employee.email}</p>
+                        <div style="display:flex;align-items:center;justify-content:space-between;"> 
+                        <p><span style="font-weight:bold;">Phone:</span> ${employee.phone}</p>
+                        <span class="bg-green-500 text-white px-2 py-1 rounded">Active</span>
+                        </div>
+                        <img alt="Portrait of ${employee.firstName} ${employee.lastName}" class="mt-4 cursor-pointer rounded-full object-cover" style="height: 150px; width: 150px;display: flex;align-items: center;justify-content: center;" src="${employee.profileImage}" onclick="openModal('${employee.firstName} ${employee.lastName}', '${employee.idCardImage}', '${employee.profileImage}')"/>
+                        <button onclick="deleteEmployee('${employee.firstName} ${employee.lastName}')" class="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded">Delete</button>
+                </div>
+            `;
+            document.querySelector('.grid').insertAdjacentHTML('beforeend', newEmployeeCard);
+        }
+        function openModal(employeeName, idCardImageUrl, profileImageUrl) {
+            currentEmployeeName = employeeName;
+            const employees = JSON.parse(localStorage.getItem('employees')) || [];
+            const employee = employees.find(emp => `${emp.firstName} ${emp.lastName}` === employeeName);
+            if (employee) {
+                document.getElementById('lastName').value = employee.lastName;
+                document.getElementById('firstName').value = employee.firstName;
+                document.getElementById('birthdate').value = employee.birthdate;
+                document.getElementById('gender').value = employee.gender;
+                document.getElementById('hireDate').value = employee.hireDate;
+                document.getElementById('religion').value = employee.religion;
+                document.getElementById('maritalStatus').value = employee.maritalStatus;
+                document.getElementById('email').value = employee.email;
+                document.getElementById('phone').value = employee.phone;
+                document.getElementById('role').value = employee.role;
+                document.getElementById('position').value = employee.position;
+                document.getElementById('dependents').value = employee.dependents;
+                document.getElementById('birthPlace').value = employee.birthPlace;
+                document.getElementById('firstLanguage').value = employee.firstLanguage;
+                document.getElementById('secondLanguage').value = employee.secondLanguage;
+                document.getElementById('degree').value = employee.degree;
+
+                const idCardImage = document.getElementById('idCardImage');
+                idCardImage.src = idCardImageUrl; // Set the ID card image URL
+                idCardImage.classList.remove('hidden'); // Show the image
+
+                const profileImage = document.getElementById('profileImage');
+                profileImage.src = profileImageUrl; // Set the profile image URL
+                profileImage.classList.remove('hidden'); // Show the image
+
+                document.getElementById('employeeModal').classList.remove('hidden');
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('employeeModal').classList.add('hidden');
+        }
+
+        function openAddModal() {
+            document.getElementById('addEmployeeModal').classList.remove('hidden');
+        }
+
+        function closeAddModal() {
+            document.getElementById('addEmployeeModal').classList.add('hidden');
+        }
+
+        function openImportModal() {
+            document.getElementById('importEmployeeModal').classList.remove('hidden');
+        }
+
+        function closeImportModal() {
+            document.getElementById('importEmployeeModal').classList.add('hidden');
+        }
+
+        function clearAddEmployeeForm() {
+            document.getElementById('addEmployeeForm').reset();
+        }
+
+        function confirmAddEmployee() {
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "Do you want to add this employee?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, add it!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    addEmployee();
+                    Swal.fire(
+                        'Added!',
+                        'The employee has been added.',
+                        'success'
+                    );
+                }
+            });
+        }
+
+        function addEmployee() {
+            const lastName = document.getElementById('addLastName').value;
+            const firstName = document.getElementById('addFirstName').value;
+            const birthdate = document.getElementById('addBirthdate').value;
+            const gender = document.getElementById('addGender').value;
+            const hireDate = document.getElementById('addHireDate').value;
+            const religion = document.getElementById('addReligion').value;
+            const maritalStatus = document.getElementById('addMaritalStatus').value;
+            const email = document.getElementById('addEmail').value;
+            const phone = document.getElementById('addPhone').value;
+            const role = document.getElementById('addRole').value;
+            const position = document.getElementById('addPosition').value;
+            const dependents = document.getElementById('addDependents').value;
+            const birthPlace = document.getElementById('addBirthPlace').value;
+            const firstLanguage = document.getElementById('addFirstLanguage').value;
+            const secondLanguage = document.getElementById('addSecondLanguage').value;
+            const degree = document.getElementById('addDegree').value;
+
+            const profileImageFile = document.getElementById('addImage').files[0];
+            const idCardImageFile = document.getElementById('addIDCard').files[0];
+
+            const readFileAsDataURL = (file) => {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result);
+                    reader.onerror = () => reject(new Error("Failed to read file"));
+                    reader.readAsDataURL(file);
+                });
+            };
+
+            Promise.all([readFileAsDataURL(profileImageFile), readFileAsDataURL(idCardImageFile)])
+                .then(([profileImageDataURL, idCardImageDataURL]) => {
+                    const newEmployee = {
+                        lastName,
+                        firstName,
+                        birthdate,
+                        gender,
+                        hireDate,
+                        religion,
+                        maritalStatus,
+                        email,
+                        phone,
+                        role,
+                        position,
+                        dependents,
+                        birthPlace,
+                        firstLanguage,
+                        secondLanguage,
+                        degree,
+                        profileImage: profileImageDataURL,
+                        idCardImage: idCardImageDataURL
+                    };
+
+                    const employees = JSON.parse(localStorage.getItem('employees')) || [];
+                    employees.push(newEmployee);
+                    localStorage.setItem('employees', JSON.stringify(employees));
+
+                    addEmployeeCard(newEmployee);
+
+                    closeAddModal();
+                    clearAddEmployeeForm();
+                })
+                .catch(error => {
+                    console.error("Error uploading image:", error);
+                });
+        }
+
+        function deleteEmployee(employeeName) {
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "You won't be able to revert this!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, delete it!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const employees = JSON.parse(localStorage.getItem('employees')) || [];
+                    const updatedEmployees = employees.filter((employee, index) => {
+                        return `${employee.firstName} ${employee.lastName}` !== employeeName || employees.findIndex(emp => emp === employee) > index; // Keeps one instance
+                    });
+
+                    localStorage.setItem('employees', JSON.stringify(updatedEmployees));
+
+                    // Clear current display and reload employees
+                    document.querySelector('.grid').innerHTML = '';
+                    updatedEmployees.forEach(employee => addEmployeeCard(employee));
+
+                    Swal.fire('Deleted!', 'The employee has been deleted.', 'success');
+                }
+            });
+        }
+
+        function searchEmployees() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const employees = JSON.parse(localStorage.getItem('employees')) || [];
+
+            // Clear current display
+            document.querySelector('.grid').innerHTML = '';
+
+            // Filter employees based on search query
+            const filteredEmployees = employees.filter(employee => {
+                return `${employee.firstName} ${employee.lastName}`.toLowerCase().includes(query);
+            });
+
+            // Populate filtered employees
+            filteredEmployees.forEach(employee => addEmployeeCard(employee));
+        }
+
+        function exportToExcel() {
+            const employees = JSON.parse(localStorage.getItem('employees')) || [];
+            const worksheet = XLSX.utils.json_to_sheet(employees);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Employees");
+
+            XLSX.writeFile(workbook, 'Employees.xlsx');
+        }
+
+        function importEmployees() {
+            const fileInput = document.getElementById('importFile');
+            
+            if (!fileInput.files.length) {
+                Swal.fire('Error', 'Please select a file to import.', 'error');
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const data = new Uint8Array(event.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+
+                const employees = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+                const currentEmployees = JSON.parse(localStorage.getItem('employees')) || [];
+                const existingEmployeeNames = currentEmployees.map(emp => `${emp.firstName} ${emp.lastName}`);
+                
+                const mappedEmployees = employees.slice(1).map(row => ({
+                    lastName: row[0],
+                    firstName: row[1],
+                    birthdate: row[2],
+                    gender: row[3],
+                    hireDate: row[4],
+                    religion: row[5],
+                    maritalStatus: row[6],
+                    email: row[7],
+                    phone: row[8],
+                    role: row[9],
+                    position: row[10],
+                    dependents: row[11],
+                    birthPlace: row[12],
+                    firstLanguage: row[13],
+                    secondLanguage: row[14],
+                    degree: row[15],
+                    profileImage: row[16],
+                    idCardImage: row[17],
+                })).filter(employee => !existingEmployeeNames.includes(`${employee.firstName} ${employee.lastName}`)); // Filter out duplicates
+
+                const updatedEmployees = [...currentEmployees, ...mappedEmployees];
+                localStorage.setItem('employees', JSON.stringify(updatedEmployees));
+
+                // Clear and reload employees in the UI
+                document.querySelector('.grid').innerHTML = '';
+                updatedEmployees.forEach(employee => addEmployeeCard(employee));
+                
+                Swal.fire('Imported!', 'Employee data has been imported successfully.', 'success');
+                closeImportModal();
+            };
+
+            reader.readAsArrayBuffer(file);
+        }
+
+        function enableEdit() {
+            const inputs = document.querySelectorAll('#employeeModal input');
+            inputs.forEach(input => {
+                input.removeAttribute('readonly'); // Allow editing
+            });
+
+            document.getElementById('editButton').innerHTML = 'Save';
+            document.getElementById('editButton').setAttribute('onclick', 'saveChanges()');
+
+            isEditing = true; // Set editing state to true
+        }
+
+        function saveChanges() {
+            const lastName = document.getElementById('lastName').value;
+            const firstName = document.getElementById('firstName').value;
+            const birthdate = document.getElementById('birthdate').value;
+            const gender = document.getElementById('gender').value;
+            const hireDate = document.getElementById('hireDate').value;
+            const religion = document.getElementById('religion').value;
+            const maritalStatus = document.getElementById('maritalStatus').value;
+            const email = document.getElementById('email').value;
+            const phone = document.getElementById('phone').value;
+            const role = document.getElementById('role').value;
+            const position = document.getElementById('position').value;
+            const dependents = document.getElementById('dependents').value;
+            const birthPlace = document.getElementById('birthPlace').value;
+            const firstLanguage = document.getElementById('firstLanguage').value;
+            const secondLanguage = document.getElementById('secondLanguage').value;
+            const degree = document.getElementById('degree').value;
+
+            // Confirmation dialog using SweetAlert
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "Do you want to save these changes?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, save it!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const employees = JSON.parse(localStorage.getItem('employees')) || [];
+                    const updatedEmployees = employees.map(employee => {
+                        if (`${employee.firstName} ${employee.lastName}` === currentEmployeeName) {
+                            return { 
+                                ...employee, 
+                                lastName, 
+                                firstName,
+                                birthdate,
+                                gender,
+                                hireDate,
+                                religion,
+                                maritalStatus,
+                                email,
+                                phone,
+                                role,
+                                position,
+                                dependents,
+                                birthPlace,
+                                firstLanguage,
+                                secondLanguage,
+                                degree
+                                // Keep the existing images 
+                            };
+                        }
+                        return employee;
+                    });
+
+                    localStorage.setItem('employees', JSON.stringify(updatedEmployees));
+
+                    // Clear current display and reload employees
+                    document.querySelector('.grid').innerHTML = '';
+                    updatedEmployees.forEach(employee => addEmployeeCard(employee));
+
+                    // Show success message
+                    Swal.fire('Saved!', 'The employee data has been updated.', 'success');
+
+                    // Reset edit state
+                    currentEmployeeName = ''; // Clear the current employee reference
+                    isEditing = false;  // Reset editing state
+
+                    // Reset input fields to readonly
+                    const inputs = document.querySelectorAll('#employeeModal input');
+                    inputs.forEach(input => {
+                        input.setAttribute('readonly', true); // Make fields non-editable
+                    });
+
+                    // Change the button back to "Edit"
+                    document.getElementById('editButton').innerHTML = 'Edit';
+                    document.getElementById('editButton').setAttribute('onclick', 'enableEdit()');
+
+                    // Close modal
+                    closeModal();
+                }
+            });
+        }
+    </script>
+</body>
+</html>
